@@ -1,0 +1,12 @@
+#!/bin/bash
+
+
+
+export MASTER_PORT=$((10000 + $RANDOM))
+export WORLD_SIZE=4
+
+# https://gist.github.com/TengdaHan/1dd10d335c7ca6f13810fff41e809904
+master_addr=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
+export MASTER_ADDR=$master_addr
+# activate virtualenv
+# source venv/bin/activate
