@@ -3,6 +3,7 @@ import functools
 import os
 from collections import OrderedDict
 from functools import partial
+from pathlib import Path
 from types import SimpleNamespace
 
 import neptune
@@ -11,12 +12,14 @@ import torch.distributed as dist
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.version
+import torch.distributed.checkpoint as dist_checkpoint
 from datasets import load_dataset, load_from_disk
 from neptune.utils import stringify_unsupported
 from neptune_pytorch import NeptuneLogger
 from setuptools import LooseVersion
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import MixedPrecision
+from torch.distributed.fsdp.fully_sharded_data_parallel import StateDictType
 from torch.distributed.fsdp.wrap import (
     enable_wrap,
     transformer_auto_wrap_policy,
@@ -226,8 +229,8 @@ def get_dataloader(
             hf_dataset = load_dataset(
                 "allenai/c4", "en", split="validation", streaming=True
             )
-    # if config.is_plgrid: todo might have to add this
-    hf_dataset = hf_dataset.to_iterable_dataset(num_shards=64)
+    if config.is_plgrid:
+        hf_dataset = hf_dataset.to_iterable_dataset(num_shards=64)
     hf_dataset = hf_dataset.shuffle(buffer_size=buffer_size, seed=seed)
     tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
     tokenizer.pad_token = tokenizer.eos_token
@@ -270,7 +273,7 @@ def train_model(config, device):
     validation_steps = int(
         1e06 // (config.batch_size * config.seq_length)
     )  # we want to evaluate on 1M tokens
-    # conditions and some stuff below adapted from here 
+    # conditions and some stuff below adapted from here
     # https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html
     bf16_ready = (
         torch.version.cuda
@@ -295,7 +298,8 @@ def train_model(config, device):
     model = FSDP(
         model, auto_wrap_policy=my_trans_wrap_policy, mixed_precision=avail_precision
     )
-    torch.cuda.set_device(local_rank)
+
+
     if config.log and global_rank == 0:
         nep_run = neptune.init_run()
         nep_log = NeptuneLogger(
@@ -305,14 +309,23 @@ def train_model(config, device):
         nep_run[nep_log.base_namespace]["hyperparams"] = stringify_unsupported(
             config.__dict__
         )
-    model.to(device)
 
     # cosine annealing without warm restarts
     optimizer = AdamW(model.parameters(), lr=config.learning_rate)
     scheduler = create_sched(optimizer, config)
+    steps_done = 0
+    if config.load_dir is not None:
+        model, optimizer, scheduler, steps_done = load_model(model, optimizer, scheduler, steps_done, config.load_dir)
+    
+    torch.cuda.set_device(local_rank)
     model.train()
+    model.to(device)
+
 
     for i, batch in zip(range(config.train_steps), dataloader):
+        # I don't think there's a more efficent way to do this with huggingface
+        if i < steps_done:
+            continue
         input_ids = batch["input_ids"].to(device)
         target_ids = batch["target_ids"].to(device)
         attention_mask = batch["attention_mask"]
@@ -334,13 +347,14 @@ def train_model(config, device):
             dist.reduce(train_loss, 0)
             if global_rank == 0:
                 train_loss /= world_size
+                train_loss = train_loss.item()
                 print(
-                    f"Step:{i}, Train Loss:{train_loss}, Learn Rate:{scheduler.get_last_lr()}"
+                    f"Step:{i}, Train Loss:{train_loss}, Learn Rate:{scheduler.get_last_lr()[0]}"
                 )
                 if config.log:
                     nep_run[nep_log.base_namespace]["train/loss"] = train_loss
                     nep_run[nep_log.base_namespace]["train/lr"] = (
-                        scheduler.get_last_lr()
+                        scheduler.get_last_lr()[0]
                     )
 
         # this was originally config.log_train_loss_freq so I changed it
@@ -352,13 +366,15 @@ def train_model(config, device):
             dist.reduce(valid_loss, 0)
             if global_rank == 0:
                 valid_loss /= world_size
+                valid_loss = valid_loss.item()
                 print(f"Valid loss: {valid_loss}")
                 if config.log:
                     nep_run[nep_log.base_namespace]["valid/loss"] = valid_loss
 
         loss.backward()
         optimizer.step()
-        scheduler.step()
+        if config.is_cosine:
+            scheduler.step()
 
     valid_loss = torch.zeros(1)
     valid_loss += calculate_valid_loss(
@@ -367,12 +383,60 @@ def train_model(config, device):
     dist.reduce(valid_loss, 0)
     if global_rank == 0:
         valid_loss /= world_size
-        print(f"Valid loss:{valid_loss}")
+        valid_loss = valid_loss.item()
         if config.log:
-            nep_run[nep_log.base_namespace]["valid/loss"] = valid_loss
+            nep_run[nep_log.base_namespace]["valid/loss-final"] = valid_loss
         print(
             f"Final valid loss:{calculate_valid_loss(model, valid_dataloader, device, validation_steps)}"
         )
+    if config.save_dir is not None:
+        save_model(model, optimizer, scheduler, i+1, config.save_dir)
+
+
+def main(config):
+    if config.max_len < config.seq_length:
+        raise argparse.ArgumentTypeError("max_len shorter than seq_length")
+    if config.load_dir is not None:
+        load_dir = Path(config.load_dir)
+        config.load_dir = load_dir
+        if not load_dir.is_dir():
+            raise argparse.ArgumentTypeError(f"Invalid load path: {str(load_dir)}")
+    if config.save_dir is not None:
+        save_dir = Path(config.save_dir)
+        config.save_dir = save_dir
+        save_dir.mkdir(parents=True, exist_ok=True)
+        if len(os.listdir(save_dir)) > 0:
+            raise argparse.ArgumentTypeError(f"Save dir not empty: {str(save_dir)}")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if device.type == "cpu":
+        print(f"Device type is: {device}. Remember to train on GPU.")
+    train_model(config, device)
+
+
+# ------------------------- Setup -----------------------------
+
+
+def save_model(model, optim, sched, step, dir):
+    with FSDP.state_dict_type(model, StateDictType.SHARDED_STATE_DICT):
+        state_dict = {
+            "model": model.state_dict(),
+            "optim": FSDP.optim_state_dict(model, optim),
+            "sched": sched.state_dict(),
+            "steps_done": step,
+        }
+        dist_checkpoint.save(state_dict=state_dict, storage_writer=dist_checkpoint.FileSystemWriter(dir))
+
+
+def load_model(model, optim, sched, step, dir):
+    with FSDP.state_dict_type(model, StateDictType.SHARDED_STATE_DICT):
+        state_dict = {
+            "model": model.state_dict(),
+            "optim": FSDP.optim_state_dict(model, optim),
+            "sched": sched.state_dict(),
+            "steps_done": step
+        }
+    dist_checkpoint.load(state_dict=state_dict, storage_reader=dist_checkpoint.FileSystemReader(dir))
+    return state_dict["model"], state_dict["optim"], state_dict["sched"], state_dict["steps_done"]
 
 
 def is_pos_int(x):
@@ -386,19 +450,6 @@ def is_nonneg_float(x):
     xc = float(x)
     if xc < 0:
         raise argparse.ArgumentTypeError(f"{x} is not a non negative float")
-
-
-def main(config):
-    if config.max_len < config.seq_length:
-        raise argparse.ArgumentTypeError("max_len shorter than seq_length")
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if device.type == "cpu":
-        print(f"Device type is: {device}. Remember to train on GPU.")
-    train_model(config, device)
-
-
-# ------------------------- Distributed Setup -----------------------------
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -467,17 +518,33 @@ def create_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--log", action=argparse.BooleanOptionalAction, default=False)
     parser.add_argument(
-        "--is_dist", action=argparse.BooleanOptionalAction, default=True
+        "--is_dist",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Whether to set up distributed params",
     )
     parser.add_argument(
-        "--is_plgrid", action=argparse.BooleanOptionalAction, default=True
+        "--is_plgrid",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Whether this is run on plgrid (loading K. Ciebera dataset)",
+    )
+    parser.add_argument(
+        "--save_dir",
+        default=None,
+        help="dir to save model to, empty if we shouldn't save",
+    )
+    parser.add_argument(
+        "--load_dir",
+        default=None,
+        help="dir to load model from, empty if we don't want to load",
     )
     return parser
 
 
 def setup():
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12355"
+    # os.environ["MASTER_ADDR"] = "localhost"
+    # os.environ["MASTER_PORT"] = "12355"
 
     # initialize the process group
     dist.init_process_group(
