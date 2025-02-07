@@ -27,7 +27,7 @@ from torch.distributed.fsdp.wrap import (
 )
 from torch.nn.attention import SDPBackend
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, LinearLR, SequentialLR
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, LinearLR, SequentialLR, CosineAnnealingLR
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from transformers import GPT2TokenizerFast
@@ -35,7 +35,7 @@ from transformers import GPT2TokenizerFast
 # setup below main()
 global_rank = 0
 local_rank = 0
-world_size = 0
+world_size = 1
 
 
 class EmbeddingLayer(nn.Module):
@@ -179,10 +179,11 @@ class Transformer(nn.Module):
 def create_sched(optimizer, config):
     warmup_steps = round(config.train_steps / 100)
     linear = LinearLR(optimizer=optimizer, total_iters=warmup_steps)
-    # todo last epoch required after saving model?
-    cosine = CosineAnnealingWarmRestarts(
-        optimizer=optimizer, T_0=10, T_mult=2, eta_min=config.learning_rate / 1000
-    )
+    #cosine = CosineAnnealingWarmRestarts(
+    #    optimizer=optimizer, T_0=10, T_mult=2, eta_min=config.learning_rate / 1000
+    #)
+    # I think this is what the extrapolation paper suggested
+    cosine = CosineAnnealingLR(optimizer=optimizer, T_max = config.train_steps-warmup_steps)
     return SequentialLR(
         optimizer=optimizer, schedulers=[linear, cosine], milestones=[warmup_steps]
     )
@@ -373,8 +374,9 @@ def train_model(config, device):
 
         loss.backward()
         optimizer.step()
-        if config.is_cosine:
-            scheduler.step()
+        scheduler.step()
+        if config.early_stop > 0 and i == config.early_stop:
+            break
 
     valid_loss = torch.zeros(1)
     valid_loss += calculate_valid_loss(
@@ -539,12 +541,22 @@ def create_parser() -> argparse.ArgumentParser:
         default=None,
         help="dir to load model from, empty if we don't want to load",
     )
+    parser.add_argument(
+        "--early-stop",
+        default=-1,
+        type=int,
+        help="Used for the model saving and loading task"
+    )
     return parser
 
 
-def setup():
-    # os.environ["MASTER_ADDR"] = "localhost"
-    # os.environ["MASTER_PORT"] = "12355"
+def setup(config):
+    global global_rank
+    global local_rank
+    global world_size
+
+    os.environ["MASTER_ADDR"] = "localhost"
+    os.environ["MASTER_PORT"] = "12355"
 
     # initialize the process group
     dist.init_process_group(
