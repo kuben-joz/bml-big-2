@@ -9,14 +9,14 @@ from types import SimpleNamespace
 import neptune
 import torch
 import torch.distributed as dist
+import torch.distributed.checkpoint as dist_checkpoint
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.version
-import torch.distributed.checkpoint as dist_checkpoint
 from datasets import load_dataset, load_from_disk
+from datasets.distributed import split_dataset_by_node
 from neptune.utils import stringify_unsupported
 from neptune_pytorch import NeptuneLogger
-from setuptools import LooseVersion
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import MixedPrecision
 from torch.distributed.fsdp.fully_sharded_data_parallel import StateDictType
@@ -27,7 +27,12 @@ from torch.distributed.fsdp.wrap import (
 )
 from torch.nn.attention import SDPBackend
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, LinearLR, SequentialLR, CosineAnnealingLR
+from torch.optim.lr_scheduler import (
+    CosineAnnealingLR,
+    CosineAnnealingWarmRestarts,
+    LinearLR,
+    SequentialLR,
+)
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from transformers import GPT2TokenizerFast
@@ -179,11 +184,13 @@ class Transformer(nn.Module):
 def create_sched(optimizer, config):
     warmup_steps = round(config.train_steps / 100)
     linear = LinearLR(optimizer=optimizer, total_iters=warmup_steps)
-    #cosine = CosineAnnealingWarmRestarts(
+    # cosine = CosineAnnealingWarmRestarts(
     #    optimizer=optimizer, T_0=10, T_mult=2, eta_min=config.learning_rate / 1000
-    #)
+    # )
     # I think this is what the extrapolation paper suggested
-    cosine = CosineAnnealingLR(optimizer=optimizer, T_max = config.train_steps-warmup_steps)
+    cosine = CosineAnnealingLR(
+        optimizer=optimizer, T_max=config.train_steps - warmup_steps
+    )
     return SequentialLR(
         optimizer=optimizer, schedulers=[linear, cosine], milestones=[warmup_steps]
     )
@@ -233,9 +240,12 @@ def get_dataloader(
     if config.is_plgrid:
         hf_dataset = hf_dataset.to_iterable_dataset(num_shards=64)
     hf_dataset = hf_dataset.shuffle(buffer_size=buffer_size, seed=seed)
+    hf_dataset = split_dataset_by_node(
+        hf_dataset, world_size=world_size, rank=global_rank
+    )
     tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
     tokenizer.pad_token = tokenizer.eos_token
-    sampler = DistributedSampler(hf_dataset) if config.is_dist else None
+    # sampler = DistributedSampler(hf_dataset) if config.is_dist else None
     dataloader = DataLoader(
         hf_dataset,
         batch_size=batch_size,
@@ -243,7 +253,7 @@ def get_dataloader(
         shuffle=False,
         pin_memory=True,
         num_workers=num_workers,
-        sampler=sampler,
+        # sampler=sampler,
     )
     return dataloader
 
@@ -296,10 +306,11 @@ def train_model(config, device):
         },
     )
     model = Transformer(config)
+    torch.cuda.set_device(local_rank)
+    model.to(device)
     model = FSDP(
         model, auto_wrap_policy=my_trans_wrap_policy, mixed_precision=avail_precision
     )
-
 
     if config.log and global_rank == 0:
         nep_run = neptune.init_run()
@@ -316,12 +327,11 @@ def train_model(config, device):
     scheduler = create_sched(optimizer, config)
     steps_done = 0
     if config.load_dir is not None:
-        model, optimizer, scheduler, steps_done = load_model(model, optimizer, scheduler, steps_done, config.load_dir)
-    
-    torch.cuda.set_device(local_rank)
-    model.train()
-    model.to(device)
+        model, optimizer, scheduler, steps_done = load_model(
+            model, optimizer, scheduler, steps_done, config.load_dir
+        )
 
+    model.train()
 
     for i, batch in zip(range(config.train_steps), dataloader):
         # I don't think there's a more efficent way to do this with huggingface
@@ -353,8 +363,8 @@ def train_model(config, device):
                     f"Step:{i}, Train Loss:{train_loss}, Learn Rate:{scheduler.get_last_lr()[0]}"
                 )
                 if config.log:
-                    nep_run[nep_log.base_namespace]["train/loss"] = train_loss
-                    nep_run[nep_log.base_namespace]["train/lr"] = (
+                    nep_run[nep_log.base_namespace]["train/loss"].append(train_loss)
+                    nep_run[nep_log.base_namespace]["train/lr"].append(
                         scheduler.get_last_lr()[0]
                     )
 
@@ -363,14 +373,14 @@ def train_model(config, device):
             valid_loss = torch.zeros(1)
             valid_loss += calculate_valid_loss(
                 model, valid_dataloader, device, validation_steps
-            ).item()
+            )
             dist.reduce(valid_loss, 0)
             if global_rank == 0:
                 valid_loss /= world_size
                 valid_loss = valid_loss.item()
                 print(f"Valid loss: {valid_loss}")
                 if config.log:
-                    nep_run[nep_log.base_namespace]["valid/loss"] = valid_loss
+                    nep_run[nep_log.base_namespace]["valid/loss"].append(valid_loss)
 
         loss.backward()
         optimizer.step()
@@ -381,37 +391,25 @@ def train_model(config, device):
     valid_loss = torch.zeros(1)
     valid_loss += calculate_valid_loss(
         model, valid_dataloader, device, validation_steps
-    ).item()
+    )
     dist.reduce(valid_loss, 0)
     if global_rank == 0:
         valid_loss /= world_size
         valid_loss = valid_loss.item()
         if config.log:
-            nep_run[nep_log.base_namespace]["valid/loss-final"] = valid_loss
+            nep_run[nep_log.base_namespace]["valid/loss-final"].append(valid_loss)
         print(
             f"Final valid loss:{calculate_valid_loss(model, valid_dataloader, device, validation_steps)}"
         )
     if config.save_dir is not None:
-        save_model(model, optimizer, scheduler, i+1, config.save_dir)
+        save_model(model, optimizer, scheduler, i + 1, config.save_dir)
 
 
 def main(config):
-    if config.max_len < config.seq_length:
-        raise argparse.ArgumentTypeError("max_len shorter than seq_length")
-    if config.load_dir is not None:
-        load_dir = Path(config.load_dir)
-        config.load_dir = load_dir
-        if not load_dir.is_dir():
-            raise argparse.ArgumentTypeError(f"Invalid load path: {str(load_dir)}")
-    if config.save_dir is not None:
-        save_dir = Path(config.save_dir)
-        config.save_dir = save_dir
-        save_dir.mkdir(parents=True, exist_ok=True)
-        if len(os.listdir(save_dir)) > 0:
-            raise argparse.ArgumentTypeError(f"Save dir not empty: {str(save_dir)}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if device.type == "cpu":
         print(f"Device type is: {device}. Remember to train on GPU.")
+        exit(-1)
     train_model(config, device)
 
 
@@ -426,7 +424,9 @@ def save_model(model, optim, sched, step, dir):
             "sched": sched.state_dict(),
             "steps_done": step,
         }
-        dist_checkpoint.save(state_dict=state_dict, storage_writer=dist_checkpoint.FileSystemWriter(dir))
+        dist_checkpoint.save(
+            state_dict=state_dict, storage_writer=dist_checkpoint.FileSystemWriter(dir)
+        )
 
 
 def load_model(model, optim, sched, step, dir):
@@ -435,10 +435,17 @@ def load_model(model, optim, sched, step, dir):
             "model": model.state_dict(),
             "optim": FSDP.optim_state_dict(model, optim),
             "sched": sched.state_dict(),
-            "steps_done": step
+            "steps_done": step,
         }
-    dist_checkpoint.load(state_dict=state_dict, storage_reader=dist_checkpoint.FileSystemReader(dir))
-    return state_dict["model"], state_dict["optim"], state_dict["sched"], state_dict["steps_done"]
+    dist_checkpoint.load(
+        state_dict=state_dict, storage_reader=dist_checkpoint.FileSystemReader(dir)
+    )
+    return (
+        state_dict["model"],
+        state_dict["optim"],
+        state_dict["sched"],
+        state_dict["steps_done"],
+    )
 
 
 def is_pos_int(x):
@@ -491,13 +498,13 @@ def create_parser() -> argparse.ArgumentParser:
         "--learning_rate",
         type=is_nonneg_float,
         default=1e-4,
-        help="Learning rate (todo cosine learning opt)",
+        help="Learning rate",
     )
     parser.add_argument(
-        "--droupout",
+        "--dropout",
         type=is_nonneg_float,
         default=is_nonneg_float,
-        help="Dropout rate (todo what for)",
+        help="Dropout rate",
     )
     parser.add_argument(
         "--seq_length",
@@ -511,14 +518,18 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--log_train_loss_freq",
         type=is_pos_int,
+        default=100,
         help="How often to record loss during training",
     )
     parser.add_argument(
         "--log_valid_loss_freq",
         type=is_pos_int,
+        default=100,
         help="How often to record loss during validation",
     )
+
     parser.add_argument("--log", action=argparse.BooleanOptionalAction, default=False)
+
     parser.add_argument(
         "--is_dist",
         action=argparse.BooleanOptionalAction,
@@ -545,7 +556,7 @@ def create_parser() -> argparse.ArgumentParser:
         "--early-stop",
         default=-1,
         type=int,
-        help="Used for the model saving and loading task"
+        help="Used for the model saving and loading task",
     )
     return parser
 
@@ -555,8 +566,8 @@ def setup(config):
     global local_rank
     global world_size
 
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "12355"
+    # os.environ["MASTER_ADDR"] = "localhost"
+    # os.environ["MASTER_PORT"] = "12355"
 
     # initialize the process group
     dist.init_process_group(
@@ -571,8 +582,23 @@ def cleanup():
 if __name__ == "__main__":
     parser = create_parser()
     config = parser.parse_args()
+    if config.max_len < config.seq_length:
+        raise argparse.ArgumentTypeError("max_len shorter than seq_length")
+    if config.load_dir is not None:
+        load_dir = Path(config.load_dir)
+        config.load_dir = load_dir
+        if not load_dir.is_dir():
+            raise argparse.ArgumentTypeError(f"Invalid load path: {str(load_dir)}")
+    if config.save_dir is not None:
+        save_dir = Path(config.save_dir)
+        config.save_dir = save_dir
+        save_dir.mkdir(parents=True, exist_ok=True)
+        if len(os.listdir(save_dir)) > 0:
+            raise argparse.ArgumentTypeError(f"Save dir not empty: {str(save_dir)}")
+    print("args parsed")
     if config.is_dist:
-        setup()
+        setup(config)
+    print("setup-complete")
     main(config)
     if config.is_dist:
         cleanup()
