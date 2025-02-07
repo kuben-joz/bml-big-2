@@ -24,6 +24,7 @@ from torch.distributed.fsdp.wrap import (
 )
 from torch.nn.attention import SDPBackend
 from torch.optim import AdamW
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts, LinearLR, SequentialLR
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from transformers import GPT2TokenizerFast
@@ -172,6 +173,18 @@ class Transformer(nn.Module):
         return output
 
 
+def create_sched(optimizer, config):
+    warmup_steps = round(config.train_steps / 100)
+    linear = LinearLR(optimizer=optimizer, total_iters=warmup_steps)
+    # todo last epoch required after saving model?
+    cosine = CosineAnnealingWarmRestarts(
+        optimizer=optimizer, T_0=10, T_mult=2, eta_min=config.learning_rate / 1000
+    )
+    return SequentialLR(
+        optimizer=optimizer, schedulers=[linear, cosine], milestones=[warmup_steps]
+    )
+
+
 def collate_tokenize(tokenizer, sequence_length, data):
     text_batch = [element["text"] for element in data]
     tokenized = tokenizer(
@@ -210,8 +223,10 @@ def get_dataloader(
                 "/net/tscratch/people/plgkciebiera/datasets/c4/validation"
             )
         else:
-            hf_dataset = load_dataset("allenai/c4", "en", split="validation", streaming=True)
-    #if config.is_plgrid: todo might have to add this
+            hf_dataset = load_dataset(
+                "allenai/c4", "en", split="validation", streaming=True
+            )
+    # if config.is_plgrid: todo might have to add this
     hf_dataset = hf_dataset.to_iterable_dataset(num_shards=64)
     hf_dataset = hf_dataset.shuffle(buffer_size=buffer_size, seed=seed)
     tokenizer = GPT2TokenizerFast.from_pretrained("gpt2")
@@ -245,7 +260,7 @@ def calculate_valid_loss(model, valid_dataloader, device, validation_steps):
             mask_loss = mask_loss[attention_mask.reshape(-1) == 1]
             loss = mask_loss.mean().item()
             valid_losses.append(loss)
-            mean_valid_loss = sum(valid_losses) / validation_steps
+    mean_valid_loss = sum(valid_losses) / validation_steps
     return mean_valid_loss
 
 
@@ -255,7 +270,8 @@ def train_model(config, device):
     validation_steps = int(
         1e06 // (config.batch_size * config.seq_length)
     )  # we want to evaluate on 1M tokens
-    # conditions and stuff below from here https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html
+    # conditions and some stuff below adapted from here 
+    # https://pytorch.org/tutorials/intermediate/FSDP_adavnced_tutorial.html
     bf16_ready = (
         torch.version.cuda
         and torch.cuda.is_bf16_supported()
@@ -290,8 +306,10 @@ def train_model(config, device):
             config.__dict__
         )
     model.to(device)
-    optimizer = AdamW(model.parameters(), lr=config.learning_rate)
 
+    # cosine annealing without warm restarts
+    optimizer = AdamW(model.parameters(), lr=config.learning_rate)
+    scheduler = create_sched(optimizer, config)
     model.train()
 
     for i, batch in zip(range(config.train_steps), dataloader):
@@ -316,10 +334,16 @@ def train_model(config, device):
             dist.reduce(train_loss, 0)
             if global_rank == 0:
                 train_loss /= world_size
-                print(f"Step:{i}, Train Loss:{train_loss}")
+                print(
+                    f"Step:{i}, Train Loss:{train_loss}, Learn Rate:{scheduler.get_last_lr()}"
+                )
                 if config.log:
                     nep_run[nep_log.base_namespace]["train/loss"] = train_loss
+                    nep_run[nep_log.base_namespace]["train/lr"] = (
+                        scheduler.get_last_lr()
+                    )
 
+        # this was originally config.log_train_loss_freq so I changed it
         if i % config.log_valid_loss_freq == 0:
             valid_loss = torch.zeros(1)
             valid_loss += calculate_valid_loss(
@@ -328,12 +352,13 @@ def train_model(config, device):
             dist.reduce(valid_loss, 0)
             if global_rank == 0:
                 valid_loss /= world_size
-                print(f"Valid loss:{valid_loss}")
+                print(f"Valid loss: {valid_loss}")
                 if config.log:
                     nep_run[nep_log.base_namespace]["valid/loss"] = valid_loss
 
         loss.backward()
         optimizer.step()
+        scheduler.step()
 
     valid_loss = torch.zeros(1)
     valid_loss += calculate_valid_loss(

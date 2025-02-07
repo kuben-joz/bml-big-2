@@ -1,20 +1,16 @@
-
-x=12
-
-
-def f1():
-  print(x)
-
-def f2():
-  x = 7
-  print(x)
+from torch.optim.lr_scheduler import CosineAnnealingLR, LinearLR, ExponentialLR
+from torch.optim import AdamW
+import torch
 
 def main():
-  global x
-  x = 7
-  f1()
-  f2()
+    model = torch.nn.Linear(10,10)
+    optim = AdamW(model.parameters(), lr=1.0)
+    #sched = ExponentialLR(optim, start_factor=1/3, end_factor=1, total_iters=5)
+    sched = ExponentialLR(optim, start_factor=1/3, end_factor=1, total_iters=5)
+    for i in range(5):
+        sched.step()
+        print(sched.get_last_lr())
 
 
-if __name__=="__main__":
-  main()
+if __name__ == "__main__":
+    main()
