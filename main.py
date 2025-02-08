@@ -576,8 +576,10 @@ def setup(config):
     global local_rank
     global world_size
 
-    # os.environ["MASTER_ADDR"] = "localhost"
-    # os.environ["MASTER_PORT"] = "12355"
+
+    if not config.is_dist:
+        os.environ["MASTER_ADDR"] = "localhost"
+        os.environ["MASTER_PORT"] = "12355"
 
     # initialize the process group
     dist.init_process_group(
@@ -606,9 +608,7 @@ if __name__ == "__main__":
         if len(os.listdir(save_dir)) > 0:
             raise argparse.ArgumentTypeError(f"Save dir not empty: {str(save_dir)}")
     print("args parsed")
-    if config.is_dist:
-        setup(config)
+    setup(config)
     print("setup-complete")
     main(config)
-    if config.is_dist:
-        cleanup()
+    cleanup()
