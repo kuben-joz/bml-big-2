@@ -17,9 +17,9 @@ from datasets import load_dataset, load_from_disk
 from datasets.distributed import split_dataset_by_node
 from neptune.utils import stringify_unsupported
 from neptune_pytorch import NeptuneLogger
+from torch.distributed.checkpoint.state_dict import get_state_dict, set_state_dict
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.fsdp import MixedPrecision
-from torch.distributed.fsdp.fully_sharded_data_parallel import StateDictType
 from torch.distributed.fsdp.wrap import (
     enable_wrap,
     transformer_auto_wrap_policy,
@@ -305,44 +305,46 @@ def train_model(config, device):
             Block,
         },
     )
-    model = Transformer(config)
+    model1 = Transformer(config)
     torch.cuda.set_device(local_rank)
-    model.to(device)
-    model = FSDP(
-        model, auto_wrap_policy=my_trans_wrap_policy, mixed_precision=avail_precision
+    model1.to(device)
+    model1 = FSDP(
+        model1, auto_wrap_policy=my_trans_wrap_policy, mixed_precision=avail_precision
     )
 
     if config.log and global_rank == 0:
         nep_run = neptune.init_run()
         nep_log = NeptuneLogger(
             run=nep_run,
-            model=model,
+            model=model1,
         )
         nep_run[nep_log.base_namespace]["hyperparams"] = stringify_unsupported(
             config.__dict__
         )
 
     # cosine annealing without warm restarts
-    optimizer = AdamW(model.parameters(), lr=config.learning_rate)
+    optimizer = AdamW(model1.parameters(), lr=config.learning_rate)
     scheduler = create_sched(optimizer, config)
     steps_done = 0
     if config.load_dir is not None:
-        model, optimizer, scheduler, steps_done = load_model(
-            model, optimizer, scheduler, steps_done, config.load_dir
+        model1, optimizer, scheduler, steps_done = load_model(
+            model1, optimizer, scheduler, steps_done, config.load_dir
         )
 
-    model.train()
+    model1.train()
 
     for i, batch in zip(range(config.train_steps), dataloader):
         # I don't think there's a more efficent way to do this with huggingface
         if i < steps_done:
+            if i % 50 == 0:
+                print(f"skipping step {i}")
             continue
         input_ids = batch["input_ids"].to(device)
         target_ids = batch["target_ids"].to(device)
         attention_mask = batch["attention_mask"]
 
         optimizer.zero_grad()
-        outputs = model(input_ids)
+        outputs = model1(input_ids)
 
         mask_loss = F.cross_entropy(
             outputs.flatten(0, -2),
@@ -372,7 +374,7 @@ def train_model(config, device):
         if i % config.log_valid_loss_freq == 0:
             valid_loss = torch.zeros(1)
             valid_loss += calculate_valid_loss(
-                model, valid_dataloader, device, validation_steps
+                model1, valid_dataloader, device, validation_steps
             )
             dist.reduce(valid_loss, 0)
             if global_rank == 0:
@@ -390,7 +392,7 @@ def train_model(config, device):
 
     valid_loss = torch.zeros(1)
     valid_loss += calculate_valid_loss(
-        model, valid_dataloader, device, validation_steps
+        model1, valid_dataloader, device, validation_steps
     )
     dist.reduce(valid_loss, 0)
     if global_rank == 0:
@@ -399,10 +401,10 @@ def train_model(config, device):
         if config.log:
             nep_run[nep_log.base_namespace]["valid/loss-final"].append(valid_loss)
         print(
-            f"Final valid loss:{calculate_valid_loss(model, valid_dataloader, device, validation_steps)}"
+            f"Final valid loss:{calculate_valid_loss(model1, valid_dataloader, device, validation_steps)}"
         )
     if config.save_dir is not None:
-        save_model(model, optimizer, scheduler, i + 1, config.save_dir)
+        save_model(model1, optimizer, scheduler, i + 1, config.save_dir)
 
 
 def main(config):
@@ -417,33 +419,41 @@ def main(config):
 
 
 def save_model(model, optim, sched, step, dir):
-    with FSDP.state_dict_type(model, StateDictType.SHARDED_STATE_DICT):
-        state_dict = {
-            "model": model.state_dict(),
-            "optim": FSDP.optim_state_dict(model, optim),
-            "sched": sched.state_dict(),
-            "steps_done": step,
-        }
-        dist_checkpoint.save(
-            state_dict=state_dict, storage_writer=dist_checkpoint.FileSystemWriter(dir)
-        )
+    model_sd, optim_sd = get_state_dict(model, optim)
+    state_dict = {
+        "model": model_sd,
+        "optim": optim_sd,
+        "sched": sched.state_dict(),
+        "steps_done": step,
+    }
+    dist_checkpoint.save(
+        state_dict=state_dict, storage_writer=dist_checkpoint.FileSystemWriter(dir)
+    )
 
 
 def load_model(model, optim, sched, step, dir):
-    with FSDP.state_dict_type(model, StateDictType.SHARDED_STATE_DICT):
-        state_dict = {
-            "model": model.state_dict(),
-            "optim": FSDP.optim_state_dict(model, optim),
-            "sched": sched.state_dict(),
-            "steps_done": step,
-        }
+    model_sd, optim_sd = get_state_dict(model, optim)
+    sched_sd = sched.state_dict()
+    state_dict = {
+        "model": model_sd,
+        "optim": optim_sd,
+        "sched": sched_sd,
+        "steps_done": step,
+    }
     dist_checkpoint.load(
         state_dict=state_dict, storage_reader=dist_checkpoint.FileSystemReader(dir)
     )
+    set_state_dict(
+        model=model,
+        optimizers=optim,
+        model_state_dict=model_sd,
+        optim_state_dict=optim_sd,
+    )
+    sched.load_state_dict(sched_sd)
     return (
-        state_dict["model"],
-        state_dict["optim"],
-        state_dict["sched"],
+        model,
+        optim,
+        sched,
         state_dict["steps_done"],
     )
 
@@ -553,7 +563,7 @@ def create_parser() -> argparse.ArgumentParser:
         help="dir to load model from, empty if we don't want to load",
     )
     parser.add_argument(
-        "--early-stop",
+        "--early_stop",
         default=-1,
         type=int,
         help="Used for the model saving and loading task",
