@@ -1,0 +1,40 @@
+W0211 02:38:39.589000 3115607 /mnt/evafs/faculty/home/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/run.py:792] 
+W0211 02:38:39.589000 3115607 /mnt/evafs/faculty/home/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/run.py:792] *****************************************
+W0211 02:38:39.589000 3115607 /mnt/evafs/faculty/home/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/run.py:792] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0211 02:38:39.589000 3115607 /mnt/evafs/faculty/home/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/run.py:792] *****************************************
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/optim/lr_scheduler.py:243: UserWarning: The epoch parameter in `scheduler.step()` was not necessary and is being deprecated where possible. Please use `scheduler.step()` to step the scheduler. During the deprecation, if epoch is different from None, the closed form is used instead of the new chainable form, where available. Please open an issue if you are unable to replicate your use case: https://github.com/pytorch/pytorch/issues/new/choose.
+  warnings.warn(EPOCH_DEPRECATION_WARNING, UserWarning)
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/optim/lr_scheduler.py:243: UserWarning: The epoch parameter in `scheduler.step()` was not necessary and is being deprecated where possible. Please use `scheduler.step()` to step the scheduler. During the deprecation, if epoch is different from None, the closed form is used instead of the new chainable form, where available. Please open an issue if you are unable to replicate your use case: https://github.com/pytorch/pytorch/issues/new/choose.
+  warnings.warn(EPOCH_DEPRECATION_WARNING, UserWarning)
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:863: UserWarning: `_get_pg_default_device` will be deprecated, it only stays for backward-compatiblity reason. If you need to find a device for object collectives, please use `_get_object_coll_device`. If you need to query the device types supported by group, please use `_device_capability(group)`. 
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:907: UserWarning: Multiple backends are registered with this ProcessGroup. We cannot determine which one is the default. Returning cpu. Please consider using other APIs.
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:863: UserWarning: `_get_pg_default_device` will be deprecated, it only stays for backward-compatiblity reason. If you need to find a device for object collectives, please use `_get_object_coll_device`. If you need to query the device types supported by group, please use `_device_capability(group)`. 
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:907: UserWarning: Multiple backends are registered with this ProcessGroup. We cannot determine which one is the default. Returning cpu. Please consider using other APIs.
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:732: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  local_shape = tensor.shape
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:732: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  local_shape = tensor.shape
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:749: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor.shape,
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:751: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor.dtype,
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:749: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor.shape,
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:751: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor.dtype,
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/checkpoint/state_dict.py:526: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  if torch.is_tensor(p) and p.is_meta:
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/checkpoint/state_dict.py:526: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  if torch.is_tensor(p) and p.is_meta:
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:863: UserWarning: `_get_pg_default_device` will be deprecated, it only stays for backward-compatiblity reason. If you need to find a device for object collectives, please use `_get_object_coll_device`. If you need to query the device types supported by group, please use `_device_capability(group)`. 
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:907: UserWarning: Multiple backends are registered with this ProcessGroup. We cannot determine which one is the default. Returning cpu. Please consider using other APIs.
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:863: UserWarning: `_get_pg_default_device` will be deprecated, it only stays for backward-compatiblity reason. If you need to find a device for object collectives, please use `_get_object_coll_device`. If you need to query the device types supported by group, please use `_device_capability(group)`. 
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:907: UserWarning: Multiple backends are registered with this ProcessGroup. We cannot determine which one is the default. Returning cpu. Please consider using other APIs.
+  warnings.warn(

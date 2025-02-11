@@ -2,5 +2,3 @@ bml-big-2.code-workspace
 data
 model-save
 .neptune
-*.out
-*.err

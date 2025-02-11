@@ -1,0 +1,40 @@
+NODELIST=dgx-1
+MASTER_ADDR=dgx-1
+MASTER_PORT=18977
+args parsed
+my global rank is 0
+my local rank is 0
+world size is 2
+args parsed
+my global rank is 1
+my local rank is 1
+world size is 2
+device count is 2
+device count is 2
+setup-completesetup-complete
+
+[neptune] [info   ] Neptune initialized. Open in the app: https://app.neptune.ai/bml/bml/e/BML-44
+Are we using bf16?: True
+Step:0, Train Loss:11.21875, Learn Rate:3.3333333333333335e-05
+Valid loss: 11.222848892211914
+Step:5, Train Loss:10.875, Learn Rate:9.959774064153979e-05
+Step:10, Train Loss:10.4375, Learn Rate:9.79746486807249e-05
+Step:15, Train Loss:9.9375, Learn Rate:9.514632691433111e-05
+Step:20, Train Loss:9.625, Learn Rate:9.118382907149167e-05
+Step:25, Train Loss:9.25, Learn Rate:8.618670190525353e-05
+Step:30, Train Loss:9.03125, Learn Rate:8.028048435688336e-05
+Step:35, Train Loss:8.78125, Learn Rate:7.361355373863417e-05
+Step:40, Train Loss:8.71875, Learn Rate:6.635339816587112e-05
+Step:45, Train Loss:8.4375, Learn Rate:5.8682408883346545e-05
+training done
+training done
+Final valid loss:8.394979476928711
+[neptune] [info   ] Shutting down background jobs, please wait a moment...
+[neptune] [info   ] Done!
+[neptune] [info   ] Waiting for the remaining 12 operations to synchronize with Neptune. Do not kill this process.
+destroying process group
+[neptune] [info   ] All 12 operations synced, thanks for waiting!
+[neptune] [info   ] Explore the metadata in the Neptune app: https://app.neptune.ai/bml/bml/e/BML-44/metadata
+destroying process group
+process group destroyed
+process group destroyed

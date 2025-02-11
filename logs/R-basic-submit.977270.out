@@ -1,0 +1,36 @@
+NODELIST=dgx-2
+MASTER_ADDR=dgx-2
+MASTER_PORT=14843
+args parsed
+setup-complete
+[neptune] [info   ] Neptune initialized. Open in the app: https://app.neptune.ai/bml/bml/e/BML-34
+Are we using bf16?: True
+Step:0, Train Loss:11.1875, Learn Rate:3.3333333333333335e-05
+Valid loss: 11.182376861572266
+Step:100, Train Loss:7.65625, Learn Rate:9.797464868072493e-05
+Valid loss: 7.767930507659912
+Step:200, Train Loss:7.53125, Learn Rate:9.118382907149173e-05
+Valid loss: 7.547643661499023
+Step:300, Train Loss:7.40625, Learn Rate:8.028048435688347e-05
+Valid loss: 7.417008399963379
+Step:400, Train Loss:7.3125, Learn Rate:6.635339816587124e-05
+Valid loss: 7.316086292266846
+Step:500, Train Loss:7.28125, Learn Rate:5.0793298191740526e-05
+Valid loss: 7.240778923034668
+Step:600, Train Loss:7.1875, Learn Rate:3.5153981233586354e-05
+Valid loss: 7.194159984588623
+Step:700, Train Loss:7.09375, Learn Rate:2.099715452144016e-05
+Valid loss: 7.162909984588623
+Step:800, Train Loss:7.25, Learn Rate:9.736487123447095e-06
+Valid loss: 7.140881061553955
+Step:900, Train Loss:7.0625, Learn Rate:2.4964441129527396e-06
+Valid loss: 7.136270523071289
+training done
+Final valid loss:7.1352458000183105
+[neptune] [info   ] Shutting down background jobs, please wait a moment...
+[neptune] [info   ] Done!
+[neptune] [info   ] Waiting for the remaining 4 operations to synchronize with Neptune. Do not kill this process.
+[neptune] [info   ] All 4 operations synced, thanks for waiting!
+[neptune] [info   ] Explore the metadata in the Neptune app: https://app.neptune.ai/bml/bml/e/BML-34/metadata
+destroying process group
+process group destroyed

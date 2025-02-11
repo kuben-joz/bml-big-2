@@ -1,0 +1,207 @@
+NODELIST=dgx-[2,4]
+MASTER_ADDR=dgx-2
+MASTER_PORT=21817
+args parsed
+my global rank is 1
+my local rank is 0
+world size is 2
+device count is 1
+args parsed
+my global rank is 0
+my local rank is 0
+world size is 2
+device count is 1
+setup-complete
+setup-complete
+[neptune] [info   ] Neptune initialized. Open in the app: https://app.neptune.ai/bml/bml/e/BML-41
+Are we using bf16?: True
+Step:0, Train Loss:11.1875, Learn Rate:3.3333333333333335e-05
+Valid loss: 11.1875
+Step:100, Train Loss:7.71875, Learn Rate:9.999953560950644e-05
+Valid loss: 7.768750190734863
+Step:200, Train Loss:7.5, Learn Rate:9.99595518201876e-05
+Valid loss: 7.475521087646484
+Step:300, Train Loss:7.25, Learn Rate:9.98551283561076e-05
+Valid loss: 7.278124809265137
+Step:400, Train Loss:7.109375, Learn Rate:9.968639990650622e-05
+Valid loss: 7.114062309265137
+Step:500, Train Loss:7.015625, Learn Rate:9.945358410356831e-05
+Valid loss: 6.981249809265137
+Step:600, Train Loss:6.875, Learn Rate:9.91569812417136e-05
+Valid loss: 6.881250381469727
+Step:700, Train Loss:6.78125, Learn Rate:9.879697389026578e-05
+Valid loss: 6.8098955154418945
+Step:800, Train Loss:6.703125, Learn Rate:9.837402640000037e-05
+Valid loss: 6.75
+Step:900, Train Loss:6.640625, Learn Rate:9.788868430420826e-05
+Valid loss: 6.698437690734863
+Step:1000, Train Loss:6.609375, Learn Rate:9.734157361504659e-05
+Valid loss: 6.653124809265137
+Step:1100, Train Loss:6.609375, Learn Rate:9.673340001608499e-05
+Valid loss: 6.6119794845581055
+Step:1200, Train Loss:6.53125, Learn Rate:9.606494795208903e-05
+Valid loss: 6.578125
+Step:1300, Train Loss:6.484375, Learn Rate:9.533707961721439e-05
+Valid loss: 6.5390625
+Step:1400, Train Loss:6.515625, Learn Rate:9.455073384291683e-05
+Valid loss: 6.511458396911621
+Step:1500, Train Loss:6.359375, Learn Rate:9.370692488701296e-05
+Valid loss: 6.477603912353516
+Step:1600, Train Loss:6.4375, Learn Rate:9.280674112545282e-05
+Valid loss: 6.449479103088379
+Step:1700, Train Loss:6.359375, Learn Rate:9.185134364849261e-05
+Valid loss: 6.424479007720947
+Step:1800, Train Loss:6.40625, Learn Rate:9.084196476307754e-05
+Valid loss: 6.402604103088379
+Step:1900, Train Loss:6.3125, Learn Rate:8.977990640336657e-05
+Valid loss: 6.378125190734863
+Step:2000, Train Loss:6.328125, Learn Rate:8.866653845144993e-05
+Valid loss: 6.352083206176758
+Step:2100, Train Loss:6.28125, Learn Rate:8.750329697042483e-05
+Valid loss: 6.332291603088379
+Step:2200, Train Loss:6.28125, Learn Rate:8.62916823521076e-05
+Valid loss: 6.3145833015441895
+Step:2300, Train Loss:6.25, Learn Rate:8.503325738177355e-05
+Valid loss: 6.2942705154418945
+Step:2400, Train Loss:6.203125, Learn Rate:8.372964522241826e-05
+Valid loss: 6.2755208015441895
+Step:2500, Train Loss:6.296875, Learn Rate:8.238252732114266e-05
+Valid loss: 6.258853912353516
+Step:2600, Train Loss:6.21875, Learn Rate:8.099364124035986e-05
+Valid loss: 6.240624904632568
+Step:2700, Train Loss:6.25, Learn Rate:7.95647784166234e-05
+Valid loss: 6.227083206176758
+Step:2800, Train Loss:6.140625, Learn Rate:7.809778184996607e-05
+Valid loss: 6.211978912353516
+Step:2900, Train Loss:6.171875, Learn Rate:7.659454372673019e-05
+Valid loss: 6.192708492279053
+Step:3000, Train Loss:6.109375, Learn Rate:7.505700297895643e-05
+Valid loss: 6.1817708015441895
+Step:3100, Train Loss:6.1875, Learn Rate:7.348714278347681e-05
+Valid loss: 6.163541793823242
+Step:3200, Train Loss:6.1875, Learn Rate:7.188698800394073e-05
+Valid loss: 6.149999618530273
+Step:3300, Train Loss:6.03125, Learn Rate:7.025860257907074e-05
+Valid loss: 6.1385416984558105
+Step:3400, Train Loss:6.109375, Learn Rate:6.860408686051812e-05
+Valid loss: 6.1270833015441895
+Step:3500, Train Loss:6.09375, Learn Rate:6.692557490375191e-05
+Valid loss: 6.1151041984558105
+Step:3600, Train Loss:6.09375, Learn Rate:6.522523171547522e-05
+Valid loss: 6.103125095367432
+Step:3700, Train Loss:6.09375, Learn Rate:6.350525046111975e-05
+Valid loss: 6.092187881469727
+Step:3800, Train Loss:6.03125, Learn Rate:6.176784963602006e-05
+Valid loss: 6.084374904632568
+Step:3900, Train Loss:6.109375, Learn Rate:6.0015270203916134e-05
+Valid loss: 6.071874618530273
+Step:4000, Train Loss:6.0625, Learn Rate:5.8249772706475896e-05
+Valid loss: 6.065625190734863
+Step:4100, Train Loss:6.078125, Learn Rate:5.64736343475649e-05
+Valid loss: 6.053646087646484
+Step:4200, Train Loss:6.0, Learn Rate:5.468914605602471e-05
+Valid loss: 6.043229103088379
+Step:4300, Train Loss:5.984375, Learn Rate:5.2898609530748446e-05
+Valid loss: 6.034895896911621
+Step:4400, Train Loss:5.984375, Learn Rate:5.110433427186438e-05
+Valid loss: 6.0291666984558105
+Step:4500, Train Loss:5.96875, Learn Rate:4.93086346018574e-05
+Valid loss: 6.019791603088379
+Step:4600, Train Loss:5.953125, Learn Rate:4.751382668047058e-05
+Valid loss: 6.0135416984558105
+Step:4700, Train Loss:5.90625, Learn Rate:4.572222551723661e-05
+Valid loss: 6.008333206176758
+Step:4800, Train Loss:5.96875, Learn Rate:4.393614198549302e-05
+Valid loss: 5.996874809265137
+Step:4900, Train Loss:5.953125, Learn Rate:4.215787984173268e-05
+Valid loss: 5.9942708015441895
+Step:5000, Train Loss:6.0, Learn Rate:4.038973275413334e-05
+Valid loss: 5.987500190734863
+Step:5100, Train Loss:5.921875, Learn Rate:3.8633981344099706e-05
+Valid loss: 5.983333587646484
+Step:5200, Train Loss:5.96875, Learn Rate:3.689289024463397e-05
+Valid loss: 5.975521087646484
+Step:5300, Train Loss:6.0, Learn Rate:3.516870517932838e-05
+Valid loss: 5.969791412353516
+Step:5400, Train Loss:5.921875, Learn Rate:3.346365006574794e-05
+Valid loss: 5.9630208015441895
+Step:5500, Train Loss:5.9375, Learn Rate:3.17799241469397e-05
+Valid loss: 5.9630208015441895
+Step:5600, Train Loss:5.96875, Learn Rate:3.0119699154767485e-05
+Valid loss: 5.957291603088379
+Step:5700, Train Loss:5.90625, Learn Rate:2.8485116508732315e-05
+Valid loss: 5.954166412353516
+Step:5800, Train Loss:5.9375, Learn Rate:2.687828455389017e-05
+Valid loss: 5.952083587646484
+Step:5900, Train Loss:5.953125, Learn Rate:2.5301275841430823e-05
+Valid loss: 5.944791793823242
+Step:6000, Train Loss:5.859375, Learn Rate:2.3756124455424788e-05
+Valid loss: 5.941145896911621
+Step:6100, Train Loss:5.890625, Learn Rate:2.224482338918654e-05
+Valid loss: 5.935937404632568
+Step:6200, Train Loss:5.859375, Learn Rate:2.0769321974638087e-05
+Valid loss: 5.9322919845581055
+Step:6300, Train Loss:5.921875, Learn Rate:1.9331523367988862e-05
+Valid loss: 5.931249618530273
+Step:6400, Train Loss:5.953125, Learn Rate:1.7933282094974332e-05
+Valid loss: 5.930208206176758
+Step:6500, Train Loss:5.84375, Learn Rate:1.657640165882034e-05
+Valid loss: 5.926562309265137
+Step:6600, Train Loss:5.875, Learn Rate:1.5262632214018107e-05
+Valid loss: 5.9244794845581055
+Step:6700, Train Loss:5.84375, Learn Rate:1.399366830891024e-05
+Valid loss: 5.9239583015441895
+Step:6800, Train Loss:5.859375, Learn Rate:1.2771146699999715e-05
+Valid loss: 5.922916412353516
+Step:6900, Train Loss:5.921875, Learn Rate:1.1596644240800964e-05
+Valid loss: 5.921875
+Step:7000, Train Loss:5.921875, Learn Rate:1.0471675847955974e-05
+Valid loss: 5.9197916984558105
+Step:7100, Train Loss:5.890625, Learn Rate:9.397692547238783e-06
+Valid loss: 5.917187690734863
+Step:7200, Train Loss:5.859375, Learn Rate:8.37607960196894e-06
+Valid loss: 5.913541793823242
+Step:7300, Train Loss:5.921875, Learn Rate:7.408154726247687e-06
+Valid loss: 5.9114580154418945
+Step:7400, Train Loss:5.90625, Learn Rate:6.495166385321666e-06
+Valid loss: 5.910416603088379
+Step:7500, Train Loss:5.875, Learn Rate:5.638292185266307e-06
+Valid loss: 5.909375190734863
+Step:7600, Train Loss:5.890625, Learn Rate:4.838637354066072e-06
+Valid loss: 5.9088544845581055
+Step:7700, Train Loss:5.90625, Learn Rate:4.097233316050587e-06
+Valid loss: 5.9083333015441895
+Step:7800, Train Loss:5.96875, Learn Rate:3.4150363615254183e-06
+Valid loss: 5.907291412353516
+Step:7900, Train Loss:5.921875, Learn Rate:2.7929264133135445e-06
+Valid loss: 5.90625
+Step:8000, Train Loss:5.890625, Learn Rate:2.231705891798433e-06
+Valid loss: 5.905208587646484
+Step:8100, Train Loss:5.875, Learn Rate:1.7320986799325376e-06
+Valid loss: 5.9041666984558105
+Step:8200, Train Loss:5.90625, Learn Rate:1.2947491895463963e-06
+Valid loss: 5.9041666984558105
+Step:8300, Train Loss:5.921875, Learn Rate:9.202215301624407e-07
+Valid loss: 5.903645992279053
+Step:8400, Train Loss:5.875, Learn Rate:6.089987813856612e-07
+Valid loss: 5.903645992279053
+Step:8500, Train Loss:5.84375, Learn Rate:3.614823698097564e-07
+Valid loss: 5.903645992279053
+Step:8600, Train Loss:5.921875, Learn Rate:1.779915512422566e-07
+Valid loss: 5.903645992279053
+Step:8700, Train Loss:5.78125, Learn Rate:5.876299891659485e-08
+Valid loss: 5.903124809265137
+Step:8800, Train Loss:5.953125, Learn Rate:3.950498222232694e-09
+Valid loss: 5.903124809265137
+training done
+training done
+Final valid loss:5.903645992279053
+[neptune] [info   ] Shutting down background jobs, please wait a moment...
+destroying process group
+[neptune] [info   ] Done!
+[neptune] [info   ] Waiting for the remaining 4 operations to synchronize with Neptune. Do not kill this process.
+[neptune] [info   ] All 4 operations synced, thanks for waiting!
+[neptune] [info   ] Explore the metadata in the Neptune app: https://app.neptune.ai/bml/bml/e/BML-41/metadata
+destroying process group
+process group destroyed
+process group destroyed

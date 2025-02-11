@@ -344,7 +344,7 @@ def train_model(config, device):
         if i < steps_done:
             if i % 50 == 0:
                 print(f"skipping step {i}")
-            if config.log and global_rank == 0:
+            if config.log and global_rank == 0 and i % config.log_train_loss_freq == 0:
                 nep_run[nep_log.base_namespace]["train/loss"].append(0.0)
                 nep_run[nep_log.base_namespace]["train/lr"].append(0.0)
             continue
@@ -398,9 +398,10 @@ def train_model(config, device):
         scheduler.step()
         if config.early_stop > 0 and i == config.early_stop - 1:
             if config.log and global_rank == 0:
-                for _ in range(config.early_stop, config.train_steps):
-                    nep_run[nep_log.base_namespace]["train/loss"].append(0.0)
-                    nep_run[nep_log.base_namespace]["train/lr"].append(0.0)
+                for j in range(config.early_stop, config.train_steps):
+                    if j % config.log_train_loss_freq == 0:
+                        nep_run[nep_log.base_namespace]["train/loss"].append(0.0)
+                        nep_run[nep_log.base_namespace]["train/lr"].append(0.0)
             break
 
     print("training done")

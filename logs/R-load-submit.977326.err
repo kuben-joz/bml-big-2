@@ -1,0 +1,68 @@
+W0211 02:40:09.073000 3118766 /mnt/evafs/faculty/home/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/run.py:792] 
+W0211 02:40:09.073000 3118766 /mnt/evafs/faculty/home/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/run.py:792] *****************************************
+W0211 02:40:09.073000 3118766 /mnt/evafs/faculty/home/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/run.py:792] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0211 02:40:09.073000 3118766 /mnt/evafs/faculty/home/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/run.py:792] *****************************************
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:863: UserWarning: `_get_pg_default_device` will be deprecated, it only stays for backward-compatiblity reason. If you need to find a device for object collectives, please use `_get_object_coll_device`. If you need to query the device types supported by group, please use `_device_capability(group)`. 
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:863: UserWarning: `_get_pg_default_device` will be deprecated, it only stays for backward-compatiblity reason. If you need to find a device for object collectives, please use `_get_object_coll_device`. If you need to query the device types supported by group, please use `_device_capability(group)`. 
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:907: UserWarning: Multiple backends are registered with this ProcessGroup. We cannot determine which one is the default. Returning cpu. Please consider using other APIs.
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:907: UserWarning: Multiple backends are registered with this ProcessGroup. We cannot determine which one is the default. Returning cpu. Please consider using other APIs.
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:732: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  local_shape = tensor.shape
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:749: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor.shape,
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:732: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  local_shape = tensor.shape
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:749: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor.shape,
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:751: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor.dtype,
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:751: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor.dtype,
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/checkpoint/state_dict.py:526: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  if torch.is_tensor(p) and p.is_meta:
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/checkpoint/state_dict.py:526: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  if torch.is_tensor(p) and p.is_meta:
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:863: UserWarning: `_get_pg_default_device` will be deprecated, it only stays for backward-compatiblity reason. If you need to find a device for object collectives, please use `_get_object_coll_device`. If you need to query the device types supported by group, please use `_device_capability(group)`. 
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:907: UserWarning: Multiple backends are registered with this ProcessGroup. We cannot determine which one is the default. Returning cpu. Please consider using other APIs.
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:863: UserWarning: `_get_pg_default_device` will be deprecated, it only stays for backward-compatiblity reason. If you need to find a device for object collectives, please use `_get_object_coll_device`. If you need to query the device types supported by group, please use `_device_capability(group)`. 
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/distributed_c10d.py:907: UserWarning: Multiple backends are registered with this ProcessGroup. We cannot determine which one is the default. Returning cpu. Please consider using other APIs.
+  warnings.warn(
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/checkpoint/planner_helpers.py:316: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  device = getattr(value, "device", None)
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/checkpoint/planner_helpers.py:316: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  device = getattr(value, "device", None)
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/checkpoint/default_planner.py:362: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  and md.size != obj.size()
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/checkpoint/default_planner.py:362: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  and md.size != obj.size()
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/_state_dict_utils.py:52: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  dim_0_size = sharded_tensor.size()[0]  # type: ignore[index]
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/_state_dict_utils.py:53: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor_numel = sharded_tensor.size().numel()  # type: ignore[union-attr]
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/_state_dict_utils.py:52: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  dim_0_size = sharded_tensor.size()[0]  # type: ignore[index]
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/_state_dict_utils.py:53: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor_numel = sharded_tensor.size().numel()  # type: ignore[union-attr]
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/_state_dict_utils.py:77: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor = tensor.narrow(0, 0, tensor_numel).reshape(sharded_tensor.size())
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/_state_dict_utils.py:77: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor = tensor.narrow(0, 0, tensor_numel).reshape(sharded_tensor.size())
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:635: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  param_numel = param.size().numel()
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:636: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  dim_0_size = param.size()[0]
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:635: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  param_numel = param.size().numel()
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:636: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  dim_0_size = param.size()[0]
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:662: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor = tensor.narrow(0, 0, param_numel).reshape(param.size())
+/home2/faculty/jjozefowicz/.pyenv/versions/3.12.9/lib/python3.12/site-packages/torch/distributed/fsdp/_state_dict_utils.py:662: FutureWarning: Please use DTensor instead and we are deprecating ShardedTensor.
+  tensor = tensor.narrow(0, 0, param_numel).reshape(param.size())
