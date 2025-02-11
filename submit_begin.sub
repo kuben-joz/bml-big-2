@@ -13,6 +13,10 @@
 #SBATCH --account=sfglab
 #SBATCH --time=00:10:00
 
+#export OMP_NUM_THREADS=2
+#export NCCL_NSOCKS_PERTHREAD=4
+#export NCCL_SOCKET_NTHREADS=2
+#export NCCL_MIN_NCHANNELS=32
 
 source data/export.env
 

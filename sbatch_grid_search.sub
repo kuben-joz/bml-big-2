@@ -1,18 +1,23 @@
 #!/bin/bash
-#SBATCH --job-name=basic-submit
+#SBATCH --array=2-4
+#SBATCH --job-name=grid-search-submit
 #SBATCH --cpus-per-gpu=8
 #SBATCH --gpus-per-task=1
 #SBATCH --mem-per-gpu=64G
 #SBATCH --ntasks-per-node=1
-#SBATCH --nodes=1
+#SBATCH --nodes=2
 
 #SBATCH --output=R-%x.%j.out
 #SBATCH --error=R-%x.%j.err
 
 #SBATCH --partition=short
 #SBATCH --account=sfglab
-#SBATCH --time=00:10:00
+#SBATCH --time=01:00:00
 
+#export OMP_NUM_THREADS=2
+#export NCCL_NSOCKS_PERTHREAD=4
+#export NCCL_SOCKET_NTHREADS=2
+#export NCCL_MIN_NCHANNELS=32
 
 source data/export.env
 
@@ -23,6 +28,15 @@ export MASTER_ADDR=$master_addr
 echo "MASTER_ADDR="$MASTER_ADDR
 export MASTER_PORT=$((10000 + $RANDOM))
 echo "MASTER_PORT="$MASTER_PORT
+id=$RANDOM
 
-srun python main.py --no-is_plgrid --log --no-is_dist
-
+srun torchrun \
+--nnodes=2 \
+--nproc_per_node=1 \
+--rdzv_id $id \
+--rdzv_backend c10d \
+--rdzv_endpoint $MASTER_ADDR:$MASTER_PORT \
+main.py --no-is_plgrid --log \
+--num_layers 4 --num_heads 4 --d_model 256 --seq_length 256 -bs 128 --dropout 0.0 \
+-lr 1e-$SLURM_ARRAY_TASK_ID -n 8835
+# batch size is per gpu so 128

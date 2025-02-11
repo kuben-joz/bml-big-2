@@ -293,8 +293,7 @@ def train_model(config, device):
         and dist.is_nccl_available()
         and torch.cuda.nccl.version() >= (2, 10)
     )
-    if global_rank == 0:
-        print(f"Are we using bf16?: {bf16_ready}")
+
     avail_precision = MixedPrecision(
         param_dtype=torch.bfloat16 if bf16_ready else torch.float16,
         reduce_dtype=torch.bfloat16 if bf16_ready else torch.float16,
@@ -313,7 +312,10 @@ def train_model(config, device):
     )
 
     if config.log and global_rank == 0:
-        nep_run = neptune.init_run()
+        nep_run = neptune.init_run(
+            name=f"{os.environ['SLURM_JOB_NAME']}-{os.environ['SLURM_JOB_ID']}",
+            tags=os.environ["SLURM_NODELIST"],
+        )
         nep_log = NeptuneLogger(
             run=nep_run,
             model=model1,
@@ -321,6 +323,10 @@ def train_model(config, device):
         nep_run[nep_log.base_namespace]["hyperparams"] = stringify_unsupported(
             config.__dict__
         )
+    if global_rank == 0:
+        print(f"Are we using bf16?: {bf16_ready}")
+        if config.log:
+            nep_run[nep_log.base_namespace]["hyperparams/bf16_used"] = bf16_ready
 
     # cosine annealing without warm restarts
     optimizer = AdamW(model1.parameters(), lr=config.learning_rate)
@@ -338,6 +344,9 @@ def train_model(config, device):
         if i < steps_done:
             if i % 50 == 0:
                 print(f"skipping step {i}")
+            if config.log and global_rank == 0:
+                nep_run[nep_log.base_namespace]["train/loss"].append(0.0)
+                nep_run[nep_log.base_namespace]["train/lr"].append(0.0)
             continue
         input_ids = batch["input_ids"].to(device)
         target_ids = batch["target_ids"].to(device)
@@ -387,9 +396,14 @@ def train_model(config, device):
         loss.backward()
         optimizer.step()
         scheduler.step()
-        if config.early_stop > 0 and i == config.early_stop:
+        if config.early_stop > 0 and i == config.early_stop - 1:
+            if config.log and global_rank == 0:
+                for _ in range(config.early_stop, config.train_steps):
+                    nep_run[nep_log.base_namespace]["train/loss"].append(0.0)
+                    nep_run[nep_log.base_namespace]["train/lr"].append(0.0)
             break
 
+    print("training done")
     valid_loss = torch.zeros(1)
     valid_loss += calculate_valid_loss(
         model1, valid_dataloader, device, validation_steps
@@ -400,11 +414,11 @@ def train_model(config, device):
         valid_loss = valid_loss.item()
         if config.log:
             nep_run[nep_log.base_namespace]["valid/loss-final"].append(valid_loss)
-        print(
-            f"Final valid loss:{calculate_valid_loss(model1, valid_dataloader, device, validation_steps)}"
-        )
+        print(f"Final valid loss:{valid_loss}")
     if config.save_dir is not None:
         save_model(model1, optimizer, scheduler, i + 1, config.save_dir)
+    if global_rank == 0 and config.log:
+        nep_run.stop()
 
 
 def main(config):
@@ -469,6 +483,7 @@ def is_nonneg_float(x):
     xc = float(x)
     if xc < 0:
         raise argparse.ArgumentTypeError(f"{x} is not a non negative float")
+    return xc
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -513,17 +528,21 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dropout",
         type=is_nonneg_float,
-        default=is_nonneg_float,
+        default=0.0,
         help="Dropout rate",
     )
     parser.add_argument(
         "--seq_length",
         type=is_pos_int,
         default=256,
-        help="Sequence length for dataloader (todo check less than max len)",
+        help="Sequence length for dataloader",
     )
     parser.add_argument(
-        "-bs", "--batch_size", type=is_pos_int, default=64, help="Batch size"
+        "-bs",
+        "--batch_size",
+        type=is_pos_int,
+        default=64,
+        help="Batch size use by dataloader per gpu",
     )
     parser.add_argument(
         "--log_train_loss_freq",
@@ -576,19 +595,36 @@ def setup(config):
     global local_rank
     global world_size
 
-
     if not config.is_dist:
-        os.environ["MASTER_ADDR"] = "localhost"
-        os.environ["MASTER_PORT"] = "12355"
+        if os.environ["MASTER_ADDR"] is None:
+            os.environ["MASTER_ADDR"] = "localhost"
+        if os.environ["MASTER_PORT"] is None:
+            os.environ["MASTER_PORT"] = "12355"
+    else:
+        assert os.environ["RANK"] is not None
+        assert os.environ["LOCAL_RANK"] is not None
+        assert os.environ["WORLD_SIZE"] is not None
+        global_rank = int(os.environ["RANK"])
+        local_rank = int(os.environ["LOCAL_RANK"])
+        world_size = int(os.environ["WORLD_SIZE"])
+        print(f"my global rank is {global_rank}")
+        print(f"my local rank is {local_rank}")
+        print(f"world size is {world_size}")
+        print(f"device count is {torch.cuda.device_count()}")
 
     # initialize the process group
+    # dist.init_process_group(
+    #    "cpu:gloo,cuda:nccl", rank=global_rank, world_size=world_size
+    # )
     dist.init_process_group(
         "cpu:gloo,cuda:nccl", rank=global_rank, world_size=world_size
     )
 
 
 def cleanup():
+    print("destroying process group")
     dist.destroy_process_group()
+    print("process group destroyed")
 
 
 if __name__ == "__main__":
